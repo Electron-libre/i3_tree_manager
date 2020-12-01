@@ -1,0 +1,12 @@
+[package]
+name = "i3_tree_manager"
+version = "0.1.0"
+authors = ["Cedric <cedric.brancourt@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tui = "0.13.0"
+i3ipc = { version = "0.10.1", features = ["i3-4-14", "i3-next"] }
+termion = "1.5.5"
