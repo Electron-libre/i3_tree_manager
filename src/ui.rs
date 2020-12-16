@@ -1,8 +1,11 @@
-use std::{error::Error, io, io::Stdout};
+use std::vec::IntoIter;
+use std::{error::Error, io, io::Stdout, slice};
 
 use i3ipc::reply::Node;
 use termion::{input::MouseTerminal, raw::IntoRawMode, raw::RawTerminal, screen::AlternateScreen};
 use tui::style::{Color, Modifier, Style};
+use tui::text::{Span, Spans};
+use tui::widgets::{Paragraph, Row, Table};
 use tui::{
     backend::TermionBackend,
     layout::{Constraint, Corner, Direction, Layout},
@@ -11,7 +14,7 @@ use tui::{
     Terminal,
 };
 
-use crate::State;
+use crate::{State, StateMode};
 
 #[derive(Clone)]
 struct UiNode {
@@ -151,6 +154,51 @@ fn build_tree_widget(tree_items: Vec<ListItem>) -> List {
         .start_corner(Corner::TopLeft)
 }
 
+fn build_menu_span<'a>(mode: &'a str, actions: Vec<(&'a str, &'a str)>) -> Spans<'a> {
+    let mode = Span::styled(
+        format!("{} ┃", mode),
+        Style::default().add_modifier(Modifier::REVERSED),
+    );
+
+    let actions = actions
+        .into_iter()
+        .fold(vec![mode], |mut acc, (key, action)| {
+            let key = Span::styled(
+                format!(" {} ∷ ", key),
+                Style::default().add_modifier(Modifier::BOLD),
+            );
+            let action = Span::raw(format!("{} ┃", action));
+            acc.push(key);
+            acc.push(action);
+            acc
+        });
+
+    Spans::from(actions)
+}
+
+fn build_menu_widget(state: &State) -> Paragraph {
+    let block = Block::default().title("Commands").borders(Borders::ALL);
+
+    let menu_span = match state.mode {
+        StateMode::Move(_) => {
+            let actions = vec![
+                ("ESC", "exit mode"),
+                ("UP", "move up"),
+                ("DOWN", "move down"),
+                ("LEFT", "move left"),
+                ("RIGHT", "move right"),
+            ];
+
+            build_menu_span("Move", actions)
+        }
+        StateMode::None => {
+            let actions = vec![("m", "move mode"), ("s", "toggle split"), ("q", "quit")];
+            build_menu_span("Select", actions)
+        }
+    };
+    Paragraph::new(menu_span).block(block)
+}
+
 type IOBoundTerminal =
     Terminal<TermionBackend<AlternateScreen<MouseTerminal<RawTerminal<Stdout>>>>>;
 
@@ -169,12 +217,6 @@ impl Renderer {
 
     pub(crate) fn render(&mut self, state: &State) -> Result<(), Box<dyn Error>> {
         self.0.draw(|frame| {
-            // Layout
-            let split = Layout::default()
-                .direction(Direction::Vertical)
-                .constraints([Constraint::Min(1), Constraint::Min(1)].as_ref())
-                .split(frame.size());
-
             let tree_items = node_into_ui_list(
                 &state.node_tree,
                 Context {
@@ -183,7 +225,14 @@ impl Renderer {
                 },
             );
             let tree_widget = build_tree_widget(tree_items);
+            let menu_widget = build_menu_widget(state);
+            // Layout
+            let split = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([Constraint::Length(3), Constraint::Min(0)].as_ref())
+                .split(frame.size());
 
+            frame.render_widget(menu_widget, split[0]);
             frame.render_widget(tree_widget, split[1]);
         })?;
         Ok(())

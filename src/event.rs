@@ -84,9 +84,9 @@ impl Events {
             thread::spawn(move || {
                 let events = i3_listener.listen();
                 for _event in events {
-                    tx.send(Event::I3).unwrap_or_else(|err| {
-                        eprintln!("{}", err);
-                    });
+                    if let Err(err) = tx.send(Event::I3) {
+                        eprintln!("{}", err)
+                    };
                 }
             })
         };
