@@ -111,7 +111,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     Key::Char('s') => state.split_toggle(),
                     _ => {}
                 },
-                StateMode::Move(node_id) => match input {
+                StateMode::Move(_node_id) => match input {
                     Key::Char('q') => {
                         break;
                     }

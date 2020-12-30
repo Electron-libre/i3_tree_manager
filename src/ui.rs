@@ -1,11 +1,10 @@
-use std::vec::IntoIter;
-use std::{error::Error, io, io::Stdout, slice};
+use std::{error::Error, io, io::Stdout};
 
 use i3ipc::reply::Node;
 use termion::{input::MouseTerminal, raw::IntoRawMode, raw::RawTerminal, screen::AlternateScreen};
 use tui::style::{Color, Modifier, Style};
 use tui::text::{Span, Spans};
-use tui::widgets::{Paragraph, Row, Table};
+use tui::widgets::Paragraph;
 use tui::{
     backend::TermionBackend,
     layout::{Constraint, Corner, Direction, Layout},
